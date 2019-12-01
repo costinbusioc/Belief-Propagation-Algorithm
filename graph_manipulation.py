@@ -8,7 +8,7 @@ maximal_cliques = []
 '''
     Compute the graph from the input file.
 '''
-def build_graph(data, N, M):
+def build_graph(data, N):
 
     G = {}
     nodes_names = []
@@ -120,10 +120,10 @@ def build_chordal_graph(H):
             H_copy[second].add_neighbour_name(first)
             H_copy[second].add_neighbour(H_copy[first])
 
+            #Connect them in the H_star
             H_star[first].add_neighbour_name(second)
             H_star[first].add_neighbour(H_star[second])
-
-            #Connect them in the H_star
+            
             H_star[second].add_neighbour_name(first)
             H_star[second].add_neighbour(H_star[first])
 
@@ -154,6 +154,10 @@ def bronk_kerbosch1(R, P, X, H_star):
     Build the maximal_cliques by applying the bronk kerbosch 1 algorithm.
 '''
 def build_maximal_cliques(H_star, nodes_names):
+    global maximal_cliques
+    
+    maximal_cliques = []
+    
     bronk_kerbosch1([], deepcopy(nodes_names), [], H_star)
     
     return maximal_cliques
@@ -172,7 +176,7 @@ def build_graph_of_cliques(maximal_cliques):
             intersection = len(list(set(maximal_cliques[i]).intersection(
                 set(maximal_cliques[j]))))
 
-            if intersection > 0:
+            if intersection:
                 #Intersection means an edge between the two nodes
                 C.append((maximal_cliques[i],
                     maximal_cliques[j], intersection))
@@ -279,16 +283,15 @@ def contains_all(accumulator, left_values):
 def dfs_util_subtree(clique_tree, node, visited, accumulator, left_values):
     accumulator += [tuple(node)]
     
-    index = clique_tree.keys().index(tuple(node))
+    index = list(clique_tree.keys()).index(tuple(node))
     visited[index] = True
 
     for child in clique_tree[tuple(node)].children:
         if contains_all(accumulator, left_values):
             return
     
-        index = clique_tree.keys().index(tuple(child))
+        index = list(clique_tree.keys()).index(tuple(child))
 
-        #Calculate Phi_u for all children
         if visited[index] == False:
             dfs_util_subtree(clique_tree, child, visited, accumulator,left_values)
 

@@ -20,20 +20,20 @@ class Factor:
         #Calculate all arrangements of [0,1] for all variables
         pairs = list(product([0,1], repeat=nr_variables))
 
-        for i in range(0, len(pairs)):
+        for i in range(len(pairs)):
             if i < len(pairs) / 2:
                 #First half represents the !variable probability
                 self.values[pairs[i]] = 1 - probabilities[i]
             else:
                 #Second half is the actual probability received at initalization
                 self.values[pairs[i]] = probabilities[i -
-                        len(pairs) / 2]
+                        len(pairs) // 2]
+
 
     #Check if a factor is empty
     def empty_factor(self):
-        if (len(self.variables) == 0):
-            return True
-        return False
+        return not self.variables
+
 
     #Calculate the index of a variable inside the factor
     def variable_position(self, var):
@@ -105,6 +105,7 @@ def factor_operation(factor1, factor2, operation = "*"):
                     factor_values[tuple(result_pair)] = factor1.values[pair1] * factor2.values[pair2]
                 elif operation == "/":
                     factor_values[tuple(result_pair)] = factor1.values[pair1] / factor2.values[pair2]
+             
 
     return Factor(factor_variables, [], factor_values)
 

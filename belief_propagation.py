@@ -3,12 +3,10 @@ from graph_manipulation import *
 from itertools import product
 from collections import OrderedDict
 
-input_file = "bn1"
-
 '''
     Open the input file and read it.
 '''
-def read_input_file():
+def read_input_file(input_file):
     with open(input_file, "r") as f:
         data = f.readlines()
     return data
@@ -65,16 +63,16 @@ def compute_factor_cliques(G, maximal_cliques, clique_tree):
     dfs_util function for the dfs described below.
 '''
 def dfs_util(graph, node, visited):
-    index = graph.keys().index(tuple(node))
+    index = list(graph.keys()).index(tuple(node))
     
     #Mark current node as visited
     visited[index] = True
 
     for neighbour in graph[tuple(node)].neighbours:
         #Iterate the neighbours of the node
-        index = graph.keys().index(tuple(neighbour))
+        index = list(graph.keys()).index(tuple(neighbour))
 
-        if visited[index] == False:
+        if not visited[index]:
             #Mark the not visited neighbour as child to the node
             graph[tuple(node)].add_child(neighbour)
 
@@ -92,11 +90,11 @@ def dfs_util(graph, node, visited):
 def dfs(graph):
     visited = [False] * len(graph)
 
-    for node in graph:
-        index = graph.keys().index(node)
+    for index, node in enumerate(graph):
+        index = list(graph.keys()).index(node)
 
         #Check if current node is not visited
-        if visited[index] == False:
+        if not visited[index]:
             dfs_util(graph, node, visited)
 
 '''
@@ -133,7 +131,7 @@ def calculate_factor_1(clique_tree, leaf):
     DFS function for the Phi_u to be calculated.
 '''
 def dfs_factor_u(graph, node, visited):
-    index = graph.keys().index(tuple(node))
+    index = list(graph.keys()).index(tuple(node))
     
     #Mark current node as visited
     visited[index] = True
@@ -141,7 +139,7 @@ def dfs_factor_u(graph, node, visited):
     #Calculate Phi_u for the current node
     graph[tuple(node)].prepare_factor_u()
     for child in graph[tuple(node)].children:
-        index = graph.keys().index(tuple(child))
+        index = list(graph.keys()).index(tuple(child))
 
         #Calculate Phi_u for all children
         if visited[index] == False:
@@ -197,74 +195,76 @@ def calculate_final_probability(left_values, good_factor):
 
 
 def main():
-    #Read the data from file
-    data = read_input_file()
-    N, M = [int(x) for x in data[0].split()]
-
-    #Copute the initial bayes network graph
-    G, nodes_names = build_graph(data, N, M)
-
-    #Compute the undirected graph from th BN
-    U = build_undirected_graph(G)
-
-    #Moralize the undirected graph
-    H = moralize_graph(U)
-   
-    #Compute the chordal graph
-    H_star = build_chordal_graph(H)
-
-    #Compute the maximal cliques from the graph
-    maximal_cliques = build_maximal_cliques(H_star, nodes_names)
-
-    #Build the graph of cliques and the maximal tree out of it
-    C = build_graph_of_cliques(maximal_cliques)
-    T = kruskal(C, len(maximal_cliques))
-
-    #Represent the tree as a graph and compute the factor for all nodes
-    clique_tree = graph_from_tree(T)
-    compute_factor_cliques(G, maximal_cliques, clique_tree)
-
-    #Mark the child-parent relationship inside the graph
-    dfs(clique_tree)
-
-    #Calculate all the probabilities
-    for line in range(N + 1, N + M + 1):
-        #Get the values from the left and right for the current probability
-        left_values, right_values = read_probability(data, line)
-
-        #Save the expected result for the probability
-        correct_answer = data[N + M + 1 + (line - N - 1)]
+    for input_file in ["bnet-0", "bnet-1", "bnet-2", "bnet-3"]:
+        print('Test: ' + input_file)
+        #Read the data from file
+        data = read_input_file(input_file)
+        N, M = [int(x) for x in data[0].split()]
     
-        leaf = []
-        root = []
-        
-        #Calculate Phi_0 for all nodes in graph
-        calculate_factor_0(clique_tree, root, leaf, right_values)
-        root = root[0]
-
-        #Calculate Phi_1 for all nodes in graph
-        calculate_factor_1(clique_tree, leaf)
+        #Copute the initial bayes network graph
+        G, nodes_names = build_graph(data, N)
+    
+        #Compute the undirected graph from th BN
+        U = build_undirected_graph(G)
+    
+        #Moralize the undirected graph
+        H = moralize_graph(U)
        
-        #Calculate Phi_u for all node in graph
-        calculate_factor_u(clique_tree, root)
-
-        #Find a clique that contains all vars from probability
-        good_factor = get_good_factor(clique_tree, left_values)
-
-        if good_factor == None:
-            #Create a new factor having variables from separate cliques
-            good_factor = factor_from_separate_cliques(clique_tree, root,
-                    left_values)
-            print("BONUS")
-
-        #Compute the final probability to be printed
-        good_factor = normalize_factor(good_factor, left_values) 
-        probability = calculate_final_probability(left_values, good_factor)
+        #Compute the chordal graph
+        H_star = build_chordal_graph(H)
+    
+        #Compute the maximal cliques from the graph
+        maximal_cliques = build_maximal_cliques(H_star, nodes_names)
+    
+        #Build the graph of cliques and the maximal tree out of it
+        C = build_graph_of_cliques(maximal_cliques)
+        T = kruskal(C, len(maximal_cliques))
+    
+        #Represent the tree as a graph and compute the factor for all nodes
+        clique_tree = graph_from_tree(T)
+        compute_factor_cliques(G, maximal_cliques, clique_tree)
+    
+        #Mark the child-parent relationship inside the graph
+        dfs(clique_tree)
+    
+        #Calculate all the probabilities
+        for line in range(N + 1, N + M + 1):
+            #Get the values from the left and right for the current probability
+            left_values, right_values = read_probability(data, line)
+    
+            #Save the expected result for the probability
+            correct_answer = data[N + M + 1 + (line - N - 1)]
         
-        print(data[line])
-        print("Own probability ="),('%.7f' % probability)
-        print("Ref probability ="),(correct_answer)
-        print("=================")
+            leaf = []
+            root = []
+            
+            #Calculate Phi_0 for all nodes in graph
+            calculate_factor_0(clique_tree, root, leaf, right_values)
+            root = root[0]
+    
+            #Calculate Phi_1 for all nodes in graph
+            calculate_factor_1(clique_tree, leaf)
+           
+            #Calculate Phi_u for all node in graph
+            calculate_factor_u(clique_tree, root)
+    
+            #Find a clique that contains all vars from probability
+            good_factor = get_good_factor(clique_tree, left_values)
+    
+            if not good_factor:
+                #Create a new factor having variables from separate cliques
+                good_factor = factor_from_separate_cliques(clique_tree, root,
+                        left_values)
+                print("BONUS")
+    
+            #Compute the final probability to be printed
+            good_factor = normalize_factor(good_factor, left_values) 
+            probability = calculate_final_probability(left_values, good_factor)
+            
+            print(data[line])
+            print(f"Own probability = {probability:.7f}")
+            print(f"Ref probability = {correct_answer}")
+            print('-' * 50)
 
 if __name__ == "__main__":
     main()
